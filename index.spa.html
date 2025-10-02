@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo Widget</title>
+  <link rel="stylesheet" href="/widget/style.css">
+</head>
+<body>
+  <div id="chat-widget"></div>
+
+  <!-- Tu bundle expone la función global definida en el build -->
+  <script src="/widget/chat-widget.standalone.iife.js"></script>
+  <script>
+    // Supongamos que tu widget expone algo como "ChatWidget.init"
+    ChatWidget.init({
+      target: '#chat-widget',
+      user: 'Demo'
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo Widget (Lite)</title>
+  <link rel="stylesheet" href="/widget/style.css">
+</head>
+<body>
+  <div id="chat-widget"></div>
+
+  <!-- Vue global: necesario en modo no-standalone -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- Tu bundle en modo lite (sin Vue embebido) -->
+  <script src="/widget/chat-widget.iife.js"></script>
+
+  <!-- <script>
+    const app = Vue.createApp(ChatWidget)   // ChatWidget es el componente
+    app.mount('#chat-widget')
+  </script> -->
+
+  <!-- Para que esto funcionara deberiamos modificar el vite.config.js para que se monte 
+  el build no-standalone desde mount.js igual que la versión standalone 
+  En concreto habria que cambiar esta línea:
+  entry: standalone ? './src/mount.js' : './src/ChatWidget.vue',
+
+  Por esto:
+
+  entry: standalone ? './src/mount.js' : './src/mount.js',
+  -->
+  <script>
+    // Igual que en standalone: tu widget expone ChatWidget
+    ChatWidget.init({
+      target: '#chat-widget',
+      user: 'Demo'
+    })
+  </script>
+</body>
+</html>
