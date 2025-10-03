@@ -2,8 +2,23 @@
   <div class="chat-widget">
 
     <button @click="show = !show" class="chat-button">
-      <img src="/images/chat-button.svg" alt="Chat" :width="iconWidth" />
+    <!-- Si viene externalIcon se usa la URL -->
+    <img v-if="externalIcon"
+        :src="externalIcon"
+        alt="Chat"
+        :width="iconWidth" />
+
+    <!-- Si no, se usa el SVG importado -->
+    <ChatIcon v-else
+              class="button-icon"
+              :width="iconWidth"          
+              :style="{ width: iconWidth + 'px', color: iconColor }" />
     </button>    
+
+<button @click="show = !show" class="chat-button">
+  <ChatIcon class="icon" />
+</button>
+
     <div v-if="show" class="chat-box">
       <div class="messages" ref="messagesContainer">
         <div v-for="(msg, i) in messages" :key="i" :class="msg.type" v-html="msg.text"></div>
@@ -17,6 +32,7 @@
 <script setup>
 import { ref, nextTick } from 'vue';
 import { defineProps } from 'vue'
+import ChatIcon from './assets/images/chat-button.svg'
 
 const props = defineProps({
   user: {
@@ -27,7 +43,17 @@ const props = defineProps({
   iconWidth: {
     type: [String, Number],
     default: 50
-  }
+  },
+  iconColor: {
+    type: String,
+    required: false,
+    default: null // o null si quieres que sea opcional
+  },
+  externalIcon: {
+    type: String,
+    required: false,
+    default: null
+  }  
 })
 
 const show = ref(false);
@@ -188,4 +214,5 @@ input {
   66%  { content: '..'; }
   100% { content: '...'; }
 }
+
 </style>
