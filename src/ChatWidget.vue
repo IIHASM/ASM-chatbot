@@ -82,7 +82,7 @@ const authorId = window.CHAT_WIDGET_CONFIG?.userId ?? null;
 const authorType = authorId ? 'user' : 'anonymous';
 
 const scriptTag = document.currentScript || [...document.getElementsByTagName('script')].pop();
-const backendUrl = scriptTag?.dataset?.backend || scriptTag?.dataset?.backend || 'http://localhost:3000';
+const backendUrl = scriptTag?.dataset?.backend || props.backend || 'http://localhost:3000';
 const iconWidth = props.iconWidth || '50';
 
 const sendMessage = async () => {
