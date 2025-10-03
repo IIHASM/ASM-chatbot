@@ -10,6 +10,10 @@ Vue 3 widget for chat interfaces with persistent conversation ID.
 - Two build modes:
   - **Standalone** → incluye Vue embebido (se puede usar en cualquier página sin Vue)
   - **Lite / No-Standalone** → más ligero, requiere que la página cargue Vue globalmente
+- Permite configurar props tanto por:
+  - Atributos `data-*` en la etiqueta `<script>` que carga el widget
+  - Props pasados directamente en la llamada a `ChatWidget.init({...})`
+  - Objeto global opcional `window.CHAT_WIDGET_CONFIG`
 
 ---
 
@@ -51,19 +55,30 @@ dist/chat-widget.standalone.iife.js
 dist/style.css
 ```
 
-**Uso en HTML:**
+**Uso en HTML (con `data-*` + `init()`):**
 
 ```html
 <link rel="stylesheet" href="/widget/style.css">
-<script src="/widget/chat-widget.standalone.iife.js"></script>
+
+<script src="/widget/chat-widget.standalone.iife.js"
+        data-chat-widget="1"
+        data-icon-width="60"
+        data-backend="https://your.api/message">
+</script>
+
 <script>
+  // Props en data-* se mezclarán automáticamente con los pasados aquí
   ChatWidget.init({
     target: '#chat-widget',
-    backend: 'https://your.api/message',
     user: 'DemoUser'
   })
 </script>
 ```
+
+En este ejemplo:
+- `data-icon-width="60"` y `data-backend="https://your.api/message"` vienen del `dataset`.
+- `user: 'DemoUser'` viene de los props pasados manualmente.
+- Ambos se combinan, dando flexibilidad al integrador.
 
 ---
 
@@ -91,12 +106,17 @@ dist/style.css
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
 <!-- Widget bundle -->
-<script src="/widget/chat-widget.iife.js"></script>
+<script src="/widget/chat-widget.iife.js" 
+        data-chat-widget="1"
+        data-icon-width="60"
+        data-backend="https://your.api/message">
+</script>
+
 
 <script>
+  // En lite también puedes pasar props por dataset + init
   ChatWidget.init({
     target: '#chat-widget',
-    backend: 'https://your.api/message',
     user: getUserFromCookie()
   })
 </script>
@@ -106,12 +126,12 @@ dist/style.css
 
 ## 🔧 Configuración dinámica
 
-Si el `userId` depende de cookies o de lógica de la aplicación host, se recomienda **usar siempre `ChatWidget.init()`** en lugar de atributos `data-*`, ya que permite montar el widget dinámicamente una vez que los datos estén disponibles.
+Cuando los datos dependen de cookies, login u otra lógica de la aplicación host, como el `userId`, se recomienda **usar siempre `ChatWidget.init()`** en lugar de atributos `data-*`, ya que permite montar el widget dinámicamente una vez que los datos estén disponibles.
 
 Ejemplo:
 
 ```html
-<script src="/widget/chat-widget.standalone.iife.js"></script>
+<script src="/widget/chat-widget.standalone.iife.js" data-chat-widget="1" data-icon-width="60"></script>
 <script>
   const userId = getUserFromCookie()
 
@@ -133,7 +153,8 @@ Sirve para documentar a terceros cómo incluir tu widget sin preocuparse de los 
 ```html
 <link rel="stylesheet" href="https://cdn.midominio.com/widget/style.css">
 
-<!-- Si no tienes Vue en tu proyecto, carga la versión standalone -->
+<div id="chat-widget"></div>
+
 <script>
 (function() {
   const hasVue = !!window.Vue
@@ -141,18 +162,18 @@ Sirve para documentar a terceros cómo incluir tu widget sin preocuparse de los 
   script.src = hasVue
     ? "https://cdn.midominio.com/widget/chat-widget.iife.js"       // Lite
     : "https://cdn.midominio.com/widget/chat-widget.standalone.iife.js" // Standalone
+  script.setAttribute('data-chat-widget', '1')
+  script.setAttribute('data-backend', 'https://your.api/message')
   script.onload = function() {
     ChatWidget.init({
       target: '#chat-widget',
-      backend: 'https://your.api/message',
+      iconWdith: 60,
       user: window.MY_APP_USER_ID || null
     })
   }
   document.head.appendChild(script)
 })();
 </script>
-
-<div id="chat-widget"></div>
 ```
 
 ---
@@ -161,4 +182,8 @@ Sirve para documentar a terceros cómo incluir tu widget sin preocuparse de los 
 
 - **Standalone** = más pesado pero autónomo. Úsalo cuando el host **no use Vue**.  
 - **Lite / No-Standalone** = más liviano, ideal para proyectos que **ya usan Vue global**.  
-- Siempre expone `ChatWidget.init()` como API para mayor control.
+- Siempre expone `ChatWidget.init()` como API para mayor control.  
+- Los props se pueden pasar de **tres maneras**:
+  1. Atributos `data-*` en el `<script data-chat-widget="1">`
+  2. Objeto global opcional `window.CHAT_WIDGET_CONFIG`
+  3. Props directos en `ChatWidget.init({...})` (los de mayor prioridad)
