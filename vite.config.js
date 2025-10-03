@@ -10,7 +10,8 @@ export default defineConfig({
   plugins: [vue(), stdLibBrowser()],
   build: {
     lib: {
-      entry: standalone ? './src/mount.js' : './src/ChatWidget.vue',
+      // entry: standalone ? './src/mount.js' : './src/ChatWidget.vue',
+      entry: standalone ? './src/mount.js' : './src/mount.js',
       name: 'ChatWidget',
       fileName: standalone ? 'chat-widget.standalone' : 'chat-widget',
       formats: ['iife']

@@ -1,6 +1,9 @@
 <template>
   <div class="chat-widget">
-    <button @click="show = !show" class="chat-button">💬</button>
+
+    <button @click="show = !show" class="chat-button">
+      <img src="/images/chat-button.svg" alt="Chat" :width="iconWidth" />
+    </button>    
     <div v-if="show" class="chat-box">
       <div class="messages" ref="messagesContainer">
         <div v-for="(msg, i) in messages" :key="i" :class="msg.type" v-html="msg.text"></div>
@@ -13,6 +16,19 @@
 
 <script setup>
 import { ref, nextTick } from 'vue';
+import { defineProps } from 'vue'
+
+const props = defineProps({
+  user: {
+    type: String,
+    required: false,
+    default: null
+  },
+  iconWidth: {
+    type: [String, Number],
+    default: 50
+  }
+})
 
 const show = ref(false);
 const input = ref('');
@@ -36,6 +52,7 @@ const authorType = authorId ? 'user' : 'anonymous';
 
 const scriptTag = document.currentScript || [...document.getElementsByTagName('script')].pop();
 const backendUrl = scriptTag?.dataset?.backend || 'http://localhost:3000';
+const iconWidth = props.iconWidth || '50';
 
 const sendMessage = async () => {
   if (!input.value.trim()) return;
@@ -120,13 +137,13 @@ const typeText = (fullText, delay = 20) => {
   font-family: sans-serif;
 }
 .chat-button {
-  background-color: #007bff;
-  color: white;
+  /* background-color: #007bff; */
+  background: none;
+  /* color: white; */
   border: none;
-  border-radius: 50%;
+  /* border-radius: 50%;
   width: 50px;
-  height: 50px;
-  font-size: 24px;
+  height: 50px; */
 }
 .chat-box {
   width: 340px;

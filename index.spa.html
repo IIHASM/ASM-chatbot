@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <title>Demo Widget</title>
-  <link rel="stylesheet" href="/widget/style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div id="chat-widget"></div>
 
   <!-- Tu bundle expone la función global definida en el build -->
-  <script src="/widget/chat-widget.standalone.iife.js"></script>
+  <script src="/chat-widget.standalone.iife.js" data-chat-widget="1" data-icon-width="60"></script>
   <script>
     // Supongamos que tu widget expone algo como "ChatWidget.init"
     ChatWidget.init({
       target: '#chat-widget',
-      user: 'Demo'
+      user: 'Demo',
+      // iconWidth: '550'
     })
   </script>
 </body>

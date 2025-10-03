@@ -7,7 +7,7 @@ const fastify = Fastify({ logger: true })
 // 1. Servir los estáticos del widget
 fastify.register(fastifyStatic, {
   root: path.join(__dirname, 'dist'),
-  prefix: '/widget/',   // tus JS y CSS estarán en /widget/...
+  prefix: '/',   // tus JS y CSS estarán en /widget/...
 })
 
 // 2. Rutas de SPA → solo devuelven index.spa.html

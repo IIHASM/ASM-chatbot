@@ -8,6 +8,15 @@
 <body>
   <h1>Chat Widget Test</h1>
   <div id="chat-widget"></div>
-  <script type="module" src="/src/mount.js"></script>
+  <script type="module">
+    import { init } from '/src/mount.js'
+
+    init({
+      target: '#chat-widget',
+      user: 'Demo',
+      iconWidth: 60
+    })
+  </script>
+
 </body>
 </html>
