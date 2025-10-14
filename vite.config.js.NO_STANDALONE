@@ -1,0 +1,22 @@
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import stdLibBrowser from 'vite-plugin-node-stdlib-browser'
+
+export default defineConfig({
+  plugins: [vue(), stdLibBrowser()],
+  build: {
+    lib: {
+      entry: './src/ChatWidget.vue',
+      name: 'ChatWidget',
+      fileName: 'chat-widget',
+      formats: ['iife']
+    },
+    rollupOptions: {
+      output: {
+        globals: {
+          vue: 'Vue'
+        }
+      }
+    }
+  }
+});

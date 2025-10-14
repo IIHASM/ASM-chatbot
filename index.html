@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Widget - Conversation Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <h1>Chat Widget Test</h1>
+  <div id="chat-widget"></div>
+  <script type="module">
+    import { init } from '/src/mount.js'
+
+    init({
+      target: '#chat-widget',
+      user: 'Demo',
+      iconWidth: 60,
+      // iconColor: '#00ff00'
+    })
+  </script>
+
+</body>
+</html>
