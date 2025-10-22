@@ -8,6 +8,15 @@
   font-weight: 400;
 }
 
+.chat-icon {
+  height: 70px;
+  width: 70px;
+}
+
+.button-icon {
+  width: 75px;
+  height: 75px;
+}
 
 .chat-button {
   background: #FAFFFD;
@@ -33,6 +42,8 @@
   background: none;
   border: none;
   box-shadow: none;
+  width: 30%;
+  justify-content: start;
 }
 
 .chat-box {
@@ -42,7 +53,7 @@
   opacity: 1;
   left: 24px;
   border-radius: 6px;
-  background: #C9C9C926;
+  /* background: #C9C9C926; */
 }
 
 .messages {
@@ -75,7 +86,7 @@
   padding-right: 12px;
   padding-bottom: 4px;
   padding-left: 12px;
-  background: #DFF7F6;
+  /* background: #003c4659; */
   display: inline-block;
   margin-bottom: 8px;
   margin-top: 4px;
@@ -96,7 +107,7 @@
   padding-right: 12px;
   padding-bottom: 4px;
   padding-left: 12px;
-  background: #FFFFFF;
+  /* background: #FFFFFF; */
   display: inline-block;
   margin-bottom: 8px;
   margin-top: 4px;
@@ -146,7 +157,7 @@ input {
 
 
 input:focus {
-  border-color: #01F3EA;
+  /* border-color: #003C46; */
   outline: none;
 }
 
@@ -168,7 +179,7 @@ input:focus {
 }
 
 .input-wrapper input:focus {
-  border-color: #01F3EA;
+  border-color: var(--focus-color);
   outline: none;
 }
 
@@ -204,7 +215,7 @@ input:focus {
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: #01F3EA;
+  /* background-color: #003C46; */
   border-radius: 50%;
   animation: wave 1.5s infinite ease-in-out;
 }
@@ -264,7 +275,7 @@ input:focus {
 .status-indicator {
   width: 10px;
   height: 10px;
-  background: #00F3EA;
+  /* background: #5cd80a; */
   border-radius: 50%;
   opacity: 1;
   margin-right: 8px;
