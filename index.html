@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Chat Widget - Conversation Mode</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
   <h1>Chat Widget Test</h1>
-  <div id="chat-widget"></div>
+  <!-- <div id="chat-widget"></div> -->
   <script type="module">
     import { init } from '/src/mount.js'
 
     init({
-      target: '#chat-widget',
-      user: 'Demo',
-      iconWidth: 60,
-      // iconColor: '#00ff00'
+      chatUserIconColor: '#01F3EA',
+      chatBotIconColor: '#01F3EA',
+      chatSendIconColor: '#01F3EA',
+      chatButtonColor: '#01F3EA',
+      statusIndicatorColor: '#01F3EA',
+      loadIndicator: '#01F3EA',
+      inputFocusColor: '#01F3EA',
+      chatBubbleColorBot: '#00F3EA1A',
+      chatBubbleColorUser: '#FFFFFF',
+      textBotColor: '#000000',
+      textUserColor: '#000000',
+      titleColor: '#000000',
+      subtitleColor: '#000000',
+      chatBackgroundColor: '#C9C9C926',
+      // chatLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg",
     })
   </script>
 
+
 </body>
+
 </html>
