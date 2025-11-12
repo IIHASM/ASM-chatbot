@@ -307,11 +307,22 @@ const scrollToBottom = () => {
   });
 };
 
-// Mensaje de bienvenida
+const assistantNames = [       
+  "KITT",          
+  "HAL 9000",             
+  "Data",          
+  "C-3PO",         
+  "R2-D2",         
+  "T-800",      
+  "Bishop",
+  "Marvin"      
+];
+
 watch(show, (newVal) => {
   if (newVal && messages.value.length === 0) {
+    const randomName = assistantNames[Math.floor(Math.random() * assistantNames.length)];
     messages.value.push({
-      text: "Hola soy Suggero, ¿en que puedo ayudarte?",
+      text: `Hola, soy ${randomName}, ¿en qué puedo ayudarte?`,
       type: "bot"
     });
     nextTick(scrollToBottom);
