@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Widget - Conversation Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+  <h1>Chat Widget Test</h1>
+  <div id="chat-widget"></div>
+    <!-- Tu bundle expone la función global definida en el build -->
+    <script src="chat-widget.standalone.iife.js" data-chat-widget="1" data-icon-width="60" data-backend="https://assistant.suggero.io/api"></script>
+  <script>
+
+    ChatWidget.init({
+      chatUserIconColor: '#01F3EA',
+      chatBotIconColor: '#01F3EA',
+      chatSendIconColor: '#01F3EA',
+      chatButtonColor: '#01F3EA',
+      statusIndicatorColor: '#01F3EA',
+      loadIndicator: '#01F3EA',
+      inputFocusColor: '#01F3EA',
+      chatBubbleColorBot: '#00F3EA1A',
+      chatBubbleColorUser: '#FFFFFF',
+      textBotColor: '#000000',
+      textUserColor: '#000000',
+      titleColor: '#000000',
+      subtitleColor: '#000000',
+      chatBackgroundColor: '#C9C9C926',
+      // chatLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg",
+    })
+  </script>
+
+
+</body>
+
+</html>
