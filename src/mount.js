@@ -1,59 +1,133 @@
 import { createApp } from 'vue'
 import ChatWidget from './ChatWidget.vue'
 
-
-/** Encuentra el <script> que carga el widget */
-function findWidgetScript() {
-  // Opción fiable: marcar el tag en el HTML con data-chat-widget="1"
-  let el = document.querySelector('script[data-chat-widget]')
-  if (el) return el
-
-  // Fallback: buscar por nombre de archivo (ajústelo si cambia el nombre)
-  const scripts = Array.from(document.querySelectorAll('script[src]'))
-  return scripts.reverse().find(s =>
-    (s.src || '').includes('chat-widget.standalone') ||
-    (s.src || '').includes('chat-widget.iife')
-  ) || null
-}
-
-/** Lee defaults desde 1) objeto global, 2) data-* del script */
-function readDefaults() {
-  const fromGlobal = (window.CHAT_WIDGET_CONFIG || {}) // opcional
-  const s = findWidgetScript()
-  const fromDataset = s ? s.dataset : {}
-  // Nota: si usa data-iconwidth="10", en JS llegará como { iconwidth: "10" }
-  return { ...fromGlobal, ...fromDataset }
-}
-
-function doMount(target, props) {
-  let el = document.querySelector(target)
-  if (!el) {
-    el = document.createElement('div')
-    el.id = target.replace('#', '')
-    document.body.appendChild(el)
+/**
+ * Obtiene la configuración de estilos desde la API
+ * @param {string} apiUrl - URL del endpoint que devuelve la configuración
+ * @returns {Promise<Object>} - Objeto con la configuración de estilos
+ */
+async function fetchStyleConfig(apiUrl) {
+  try {
+    console.log('[Chat Widget] Fetching styles from:', apiUrl)
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('[Chat Widget] Styles loaded:', data.styleConfig || data)
+    
+    // Soportar tanto { styleConfig: {...} } como respuesta directa
+    return data.styleConfig || data
+  } catch (error) {
+    console.error('[Chat Widget] Error fetching style config:', error)
+    return {}
   }
-  const app = createApp(ChatWidget, props)
-  app.mount(el)
 }
 
-/** API pública */
-function init(config = {}) {
-  // Mezcla: defaults (global+data-*) < parámetros de init()
-  const defaults = readDefaults()
-  const merged = { ...defaults, ...config }
-
-  const { target = '#chat-widget', ...props } = merged
-  // Si quiere ver qué llega:
-  // console.debug('defaults:', defaults)
-  // console.debug('config  :', config)
-  // console.debug('merged  :', merged)
-
-  doMount(target, props)
+/**
+ * Extrae la URL del backend desde styleApiUrl
+ * Ejemplo: 'http://localhost:3010/chatbot-feature/2' -> 'http://localhost:3010'
+ * @param {string} styleApiUrl - URL completa del endpoint de estilos
+ * @returns {string} - URL base del backend
+ */
+function extractBackendUrl(styleApiUrl) {
+  try {
+    const url = new URL(styleApiUrl)
+    return `${url.protocol}//${url.host}`
+  } catch (error) {
+    console.error('[Chat Widget] Error extracting backend URL:', error)
+    return null
+  }
 }
 
-// Exponer API global
+/**
+ * Inicializa el widget de chat con integración NestJS
+ * @param {Object} config - Configuración del widget
+ * @param {string} config.styleApiUrl - URL para obtener los estilos (requerido si no hay backend)
+ * @param {string} config.backend - URL del backend para mensajes (opcional, se extrae de styleApiUrl)
+ * @param {string} config.user - ID del usuario (opcional)
+ * @param {string} config.chatLogoUrl - URL del logo personalizado (opcional)
+ * @param {Object} config.styles - Estilos directos como fallback (opcional)
+ */
+export async function init(config = {}) {
+  const container = document.getElementById('chat-widget') || createContainer()
+  
+  // Estilos por defecto
+  const defaultStyles = {
+    chatUserIconColor: '#000000',
+    chatBotIconColor: '#000000',
+    chatSendIconColor: '#000000',
+    chatButtonColor: '#000000',
+    statusIndicatorColor: '#5cd80a',
+    loadIndicator: '#000000',
+    inputFocusColor: '#000000',
+    chatBubbleColorBot: '#B8B8B4',
+    chatBubbleColorUser: '#FFFFFF',
+    textBotColor: '#000000',
+    textUserColor: '#000000',
+    titleColor: '#000000',
+    subtitleColor: '#000000',
+    chatBackgroundColor: '#C9C9C926',
+  }
+  
+  // Combinar: defaults < config.styles < apiStyles
+  let styleConfig = { ...defaultStyles, ...config.styles }
+  
+  // Si se proporciona styleApiUrl, obtener estilos desde la API
+  if (config.styleApiUrl) {
+    const apiStyles = await fetchStyleConfig(config.styleApiUrl)
+    // Los estilos de la API tienen máxima prioridad
+    styleConfig = { ...styleConfig, ...apiStyles }
+  }
+  
+  // Determinar la URL del backend
+  // Prioridad: config.backend > extraer de styleApiUrl > valor por defecto
+  let backendUrl = config.backend
+  
+  if (!backendUrl && config.styleApiUrl) {
+    backendUrl = extractBackendUrl(config.styleApiUrl)
+    console.log('[Chat Widget] Backend URL extracted from styleApiUrl:', backendUrl)
+  }
+  
+  if (!backendUrl) {
+    backendUrl = 'http://localhost:3000'
+    console.warn('[Chat Widget] No backend URL provided, using default:', backendUrl)
+  }
+  
+  // Crear la aplicación Vue con la configuración combinada
+  const app = createApp(ChatWidget, {
+    backend: backendUrl,
+    user: config.user,
+    chatLogoUrl: config.chatLogoUrl || styleConfig.chatLogoUrl,
+    ...styleConfig
+  })
+  
+  console.log('[Chat Widget] Initialized with config:', {
+    backend: backendUrl,
+    styleApiUrl: config.styleApiUrl,
+    user: config.user,
+    hasCustomStyles: !!config.styles
+  })
+  
+  app.mount(container)
+}
+
+function createContainer() {
+  const div = document.createElement('div')
+  div.id = 'chat-widget'
+  document.body.appendChild(div)
+  return div
+}
+
+// Export para uso directo en navegador
 if (typeof window !== 'undefined') {
   window.ChatWidget = { init }
 }
-
-export { init }

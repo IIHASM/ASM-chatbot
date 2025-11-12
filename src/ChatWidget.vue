@@ -2,26 +2,16 @@
   <div class="chat-widget">
 
     <button @click="show = !show" class="chat-button" :class="{ 'no-shadow': show }">
-  
-      <!-- Si hay URL externa, renderiza imagen o SVG externo -->
+
       <div v-if="show && chatLogoUrl" class="chat-icon">
         <img :src="chatLogoUrl" alt="Chat Logo" />
       </div>
 
-      <!-- Si no hay URL, usa el componente local -->
-      <ChatLogo v-else-if="show" class="chat-icon"
-                 :style="{  color: chatButtonColor }"/>
+      <ChatLogo v-else-if="show" class="chat-icon" :style="{ color: chatButtonColor }" />
 
-      <!-- Ícono cuando está cerrado -->
-      <ChatSuggero v-else class="button-icon"
-                  :style="{  color: chatButtonColor }" />
+      <ChatSuggero v-else class="button-icon" :style="{ color: chatButtonColor }" />
     </button>
 
-
-    <!-- <button @click="show = !show" class="chat-button">
-        <ChatIcon class="icon" />
-      </button> -->
-    
     <div v-if="show" class="chat-box" :style="{ backgroundColor: chatBackgroundColor }">
       <div class="chat-title" :style="{ color: titleColor }">Suggero</div>
       <div class="chat-status">
@@ -30,17 +20,21 @@
       </div>
       <div class="messages" ref="messagesContainer">
 
+
         <div v-for="(msg, i) in messages" :key="i" :class="msg.type">
-          <div v-if="msg.type === 'bot'" class="message-row bot">
+          <!-- Mensaje del bot -->
+          <div v-if="msg.type === 'bot' && (i !== messages.length - 1 || !isTyping)" class="message-row bot">
             <div class="bot-icon">
-              <ChatSuggero :style="{ color: chatBotIconColor }"/>
+              <ChatSuggero :style="{ color: chatBotIconColor }" />
             </div>
-            <div class="bot-bubble" v-html="msg.text" :style="{ background: chatBubbleColorBot, color: textBotColor }"></div>
+            <div class="bot-bubble" v-html="msg.text" :style="{ background: chatBubbleColorBot, color: textBotColor }">
+            </div>
           </div>
 
-
-          <div v-else class="message-row user">
-            <div class="user-bubble" v-html="msg.text" :style="{ background: chatBubbleColorUser, color: textUserColor }"></div>
+          <!-- Mensaje del usuario -->
+          <div v-else-if="msg.type === 'user'" class="message-row user">
+            <div class="user-bubble" v-html="msg.text"
+              :style="{ background: chatBubbleColorUser, color: textUserColor }"></div>
             <div class="user-icon">
               <svg xmlns="http://www.w3.org/2000/svg" :fill="chatUserIconColor">
                 <path
@@ -48,8 +42,8 @@
               </svg>
             </div>
           </div>
-
         </div>
+
 
         <div v-if="isTyping" class="bot typing">
           <div class="typing-indicator">
@@ -62,8 +56,9 @@
       </div>
 
       <div class="input-wrapper" :style="{ '--focus-color': inputFocusColor }">
-        <input v-model="input" @keyup.enter="sendMessage" placeholder="Pregunta lo que quieras..." />
-        <button class="send-button" @click="sendMessage">
+        <input v-model="input" @keyup.enter="sendMessage" :disabled="isTyping"
+          placeholder="Pregunta lo que quieras..." />
+        <button class="send-button" @click="sendMessage" :disabled="isTyping">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" :fill="chatSendIconColor" viewBox="0 0 24 24">
             <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
           </svg>
@@ -93,82 +88,66 @@ const props = defineProps({
     required: false,
     default: null
   },
-
-  chatLogoUrl: { 
-    type: String, 
-    default: null 
+  chatLogoUrl: {
+    type: String,
+    default: null
   },
-
   chatUserIconColor: {
     type: String,
     default: '#000000'
   },
-
   chatBotIconColor: {
     type: String,
     default: '#000000'
   },
-
   chatSendIconColor: {
     type: String,
     default: '#000000'
   },
-
   chatButtonColor: {
     type: String,
     default: '#000000'
   },
-
   loadIndicator: {
     type: String,
     default: '#000000'
   },
-
   statusIndicatorColor: {
     type: String,
     default: '#5cd80a'
   },
-
   inputFocusColor: {
     type: String,
     default: '#000000'
   },
-
   chatBubbleColorBot: {
     type: String,
     default: '#B8B8B4'
   },
-
   chatBubbleColorUser: {
     type: String,
     default: '#FFFFFF'
   },
-
   textUserColor: {
     type: String,
     default: '#000000'
   },
-
   textBotColor: {
     type: String,
     default: '#000000'
   },
-
   titleColor: {
     type: String,
     default: '#000000'
   },
-
   subtitleColor: {
     type: String,
     default: '#000000'
   },
-
   chatBackgroundColor: {
     type: String,
     default: '#C9C9C926'
   },
-
 })
 
 const show = ref(false);
@@ -187,47 +166,137 @@ function getOrCreateConversationId() {
   return uid;
 }
 
+function formatBotText(text) {
+  
+  // Convierte correos tipo [correo@dominio.com] en <a href="mailto:correo@dominio.com">correo@dominio.com</a>
+  const emailRegex = /\[([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\]/g;
+  let formatted = text.replace(emailRegex, '<a href="mailto:$1">$1</a>');
+
+  // Convierte enlaces tipo [Texto](URL) en <a href="URL">Texto</a>
+  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+  formatted = formatted.replace(linkRegex, '<a href="$2" target="_blank">$1</a>');
+
+  // Convierte listas con guiones en <ul><li>
+  const lines = formatted.split('\n');
+  const listItems = lines.map(line => {
+    if (line.trim().startsWith('- ')) {
+      return `<li>${line.trim().slice(2)}</li>`;
+    }
+    return line;
+  });
+
+  formatted = listItems.join('\n');
+
+  // Si hay <li>, envolver en <ul>
+  if (formatted.includes('<li>')) {
+    formatted = `<ul>${formatted}</ul>`;
+  }
+
+  // Negritas estilo Markdown (**texto**)
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Saltos de línea
+  return formatted.replace(/\n/g, '<br>');
+}
+
 const conversationId = getOrCreateConversationId();
 const authorId = window.CHAT_WIDGET_CONFIG?.userId ?? null;
 const authorType = authorId ? 'user' : 'anonymous';
 
 const scriptTag = document.currentScript || [...document.getElementsByTagName('script')].pop();
 const backendUrl = scriptTag?.dataset?.backend || props.backend || 'http://localhost:3000';
-const iconWidth = props.iconWidth || '50';
 
 const sendMessage = async () => {
-  if (!input.value.trim()) return;
+  if (!input.value.trim() || isTyping.value) return;
 
-  messages.value.push({ text: input.value, type: 'user' });
-  scrollToBottom();
-
+  const userMessage = input.value;
+  messages.value.push({ text: userMessage, type: 'user' });
   input.value = '';
-  isTyping.value = true;
+
   scrollToBottom();
 
-  const start = Date.now();
+  // Mostrar indicador de escritura
+  isTyping.value = true;
 
-  const res = await fetch(`${backendUrl}/message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      content: messages.value[messages.value.length - 1].text,
-      authorId,
-      authorType,
-      conversationId
-    })
-  });
+  await new Promise(resolve => setTimeout(resolve, 500));
 
-  const data = await res.json();
+  const botMessageIndex = messages.value.length;
+  messages.value.push({ text: '', type: 'bot' });
 
-  const elapsed = Date.now() - start;
-  const remaining = Math.max(2000 - elapsed, 0); // mínimo 2 segundos
+  try {
+    const response = await fetch(`${backendUrl}/api/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: userMessage,
+        authorId,
+        authorType,
+        conversationId
+      })
+    });
 
-  setTimeout(() => {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let chunkCount = 0;
+    let accumulatedText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      chunkCount++;
+      const decoded = decoder.decode(value, { stream: true });
+      buffer += decoded;
+
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      for (const event of events) {
+        if (!event.trim()) continue;
+
+        const lines = event.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === 'chunk' && data.content) {
+                // Ocultar typing solo cuando llega el primer contenido
+                if (isTyping.value) {
+                  isTyping.value = false;
+                }
+
+                accumulatedText += data.content;
+                messages.value[botMessageIndex].text = formatBotText(accumulatedText);
+                await nextTick();
+                scrollToBottom();
+              } else if (data.type === 'end') {
+                // Fin del stream
+              } else if (data.type === 'error') {
+                isTyping.value = false;
+                messages.value[botMessageIndex].text = 'Parece que ha habido un error. ¿Podrías intentarlo de nuevo?';
+              }
+            } catch (e) {
+              console.error('[Chat] Error parseando SSE:', e, line);
+            }
+          }
+        }
+      }
+    }
+
+    if (!accumulatedText) {
+      isTyping.value = false;
+      messages.value[botMessageIndex].text = 'Parece que ha habido un error en tu respuesta. ¿Podrías revisarla o intentarlo de nuevo?';
+    }
+
+  } catch (error) {
+    console.error('[Chat] Error en sendMessage:', error);
     isTyping.value = false;
-    messages.value.push({ text: data.response || 'Parece que ha habido un error en tu respuesta. ¿Podrías revisarla o intentarlo de nuevo?', type: 'bot' });
-    scrollToLastBotMessage();
-  }, remaining);
+    messages.value[botMessageIndex].text = 'Error de conexión. Por favor, inténtalo de nuevo.';
+  }
+
+  scrollToBottom();
 };
 
 const scrollToBottom = () => {
@@ -238,46 +307,11 @@ const scrollToBottom = () => {
   });
 };
 
-const scrollToLastBotMessage = () => {
-  nextTick(() => {
-    const container = messagesContainer.value;
-    if (!container) return;
-
-    const botMessages = container.querySelectorAll('.bot');
-    const lastBot = botMessages[botMessages.length - 1];
-    if (lastBot) {
-      lastBot.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-};
-
-// Esto no sirve si el texto tiene html ya que se rompe el html
-const typeText = (fullText, delay = 20) => {
-  return new Promise((resolve) => {
-    debugger;
-    let current = '';
-    let i = 0;
-
-    const msg = { text: '', type: 'bot' };
-    messages.value.push(msg);
-
-    const interval = setInterval(() => {
-      debugger;
-      current += fullText[i++];
-      msg.text = current;
-      if (i >= fullText.length) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, delay);
-  });
-};
-
-// Mensaje de bienvenida la primera vez que se abre el chatbox
+// Mensaje de bienvenida
 watch(show, (newVal) => {
   if (newVal && messages.value.length === 0) {
     messages.value.push({
-      text: "Hola, ¿en que puedo ayudarte?",
+      text: "Hola soy Suggero, ¿en que puedo ayudarte?",
       type: "bot"
     });
     nextTick(scrollToBottom);
