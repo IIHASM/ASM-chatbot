@@ -22,10 +22,12 @@ async function fetchStyleConfig(apiUrl) {
     }
     
     const data = await response.json()
-    console.log('[Chat Widget] Styles loaded:', data.styleConfig || data)
     
-    // Soportar tanto { styleConfig: {...} } como respuesta directa
-    return data.styleConfig || data
+    // Extraer features si existe, sino usar directamente los datos
+    const styles = data.features || data.styleConfig || data
+    console.log('[Chat Widget] Styles loaded:', styles)
+    
+    return styles
   } catch (error) {
     console.error('[Chat Widget] Error fetching style config:', error)
     return {}

@@ -13,7 +13,7 @@
     </button>
 
     <div v-if="show" class="chat-box" :style="{ backgroundColor: chatBackgroundColor }">
-      <div class="chat-title" :style="{ color: titleColor }">Suggero</div>
+      <div class="chat-title" :style="{ color: titleColor }">{{ randomName }}</div>
       <div class="chat-status">
         <span class="status-indicator" :style="{ backgroundColor: statusIndicatorColor }"></span>
         <span class="status-text" :style="{ color: subtitleColor }">Online</span>
@@ -76,6 +76,41 @@ import ChatLogo from './assets/images/chatIcon.svg'
 import ChatSuggero from './assets/images/chatIcon.svg'
 
 import './ChatWidget.css';
+
+const randomName = ref('');
+
+import MarkdownIt from 'markdown-it';
+const md = new MarkdownIt();
+
+
+// Plugin para convertir [correo@dominio.com] en <a href="mailto:correo@dominio.com">correo@dominio.com</a>
+md.use((md) => {
+  md.inline.ruler.after('link', 'email', (state, silent) => {
+    const pos = state.pos;
+    const max = state.posMax;
+    const src = state.src.slice(pos, max);
+
+    // Regex para detectar [correo@dominio.com]
+    const match = src.match(/^\[([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\]/);
+    if (!match) return false;
+
+    if (!silent) {
+      const email = match[1];
+      const token = state.push('link_open', 'a', 1);
+      token.attrs = [['href', `mailto:${email}`]];
+
+      const textToken = state.push('text', '', 0);
+      textToken.content = email;
+
+      state.push('link_close', 'a', -1);
+    }
+
+    state.pos += match[0].length;
+    return true;
+  });
+});
+
+
 
 const props = defineProps({
   backend: {
@@ -166,37 +201,9 @@ function getOrCreateConversationId() {
   return uid;
 }
 
+
 function formatBotText(text) {
-  
-  // Convierte correos tipo [correo@dominio.com] en <a href="mailto:correo@dominio.com">correo@dominio.com</a>
-  const emailRegex = /\[([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\]/g;
-  let formatted = text.replace(emailRegex, '<a href="mailto:$1">$1</a>');
-
-  // Convierte enlaces tipo [Texto](URL) en <a href="URL">Texto</a>
-  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
-  formatted = formatted.replace(linkRegex, '<a href="$2" target="_blank">$1</a>');
-
-  // Convierte listas con guiones en <ul><li>
-  const lines = formatted.split('\n');
-  const listItems = lines.map(line => {
-    if (line.trim().startsWith('- ')) {
-      return `<li>${line.trim().slice(2)}</li>`;
-    }
-    return line;
-  });
-
-  formatted = listItems.join('\n');
-
-  // Si hay <li>, envolver en <ul>
-  if (formatted.includes('<li>')) {
-    formatted = `<ul>${formatted}</ul>`;
-  }
-
-  // Negritas estilo Markdown (**texto**)
-  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  // Saltos de línea
-  return formatted.replace(/\n/g, '<br>');
+  return md.render(text);
 }
 
 const conversationId = getOrCreateConversationId();
@@ -214,8 +221,6 @@ const sendMessage = async () => {
   input.value = '';
 
   scrollToBottom();
-
-  // Mostrar indicador de escritura
   isTyping.value = true;
 
   await new Promise(resolve => setTimeout(resolve, 500));
@@ -224,6 +229,9 @@ const sendMessage = async () => {
   messages.value.push({ text: '', type: 'bot' });
 
   try {
+    // Guardar mensaje del usuario en MongoDB
+    await saveToDB('user', userMessage);
+
     const response = await fetch(`${backendUrl}/api/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -262,7 +270,6 @@ const sendMessage = async () => {
               const data = JSON.parse(line.slice(6));
 
               if (data.type === 'chunk' && data.content) {
-                // Ocultar typing solo cuando llega el primer contenido
                 if (isTyping.value) {
                   isTyping.value = false;
                 }
@@ -272,7 +279,8 @@ const sendMessage = async () => {
                 await nextTick();
                 scrollToBottom();
               } else if (data.type === 'end') {
-                // Fin del stream
+                // Guardar mensaje del bot en MongoDB
+                await saveToDB('bot', accumulatedText);
               } else if (data.type === 'error') {
                 isTyping.value = false;
                 messages.value[botMessageIndex].text = 'Parece que ha habido un error. ¿Podrías intentarlo de nuevo?';
@@ -299,6 +307,26 @@ const sendMessage = async () => {
   scrollToBottom();
 };
 
+// Guardar mensajes en MongoDB
+async function saveToDB(type, text) {
+  try {
+    await fetch(`${backendUrl}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type,
+        content: text,
+        conversationId,
+        authorId,
+        authorType,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    console.error('[Chat] Error saving message to DB:', error);
+  }
+}
+
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -307,22 +335,28 @@ const scrollToBottom = () => {
   });
 };
 
-const assistantNames = [       
-  "KITT",          
-  "HAL 9000",             
-  "Data",          
-  "C-3PO",         
-  "R2-D2",         
-  "T-800",      
-  "Bishop",
-  "Marvin"      
-];
 
-watch(show, (newVal) => {
+const assistantNames = ref([]);
+
+async function loadNames() {
+  const response = await fetch('src/assets/namesList/nombres_propios.csv'); 
+  const csvText = await response.text();
+
+  // Dividir en líneas
+  const lines = csvText.trim().split('\n');
+
+  // Ignorar la primera línea (cabecera) y extraer la primera columna (Nombre)
+  assistantNames.value = lines.slice(1).map(line => line.split(',')[0]).filter(Boolean);
+}
+
+watch(show, async (newVal) => {
   if (newVal && messages.value.length === 0) {
-    const randomName = assistantNames[Math.floor(Math.random() * assistantNames.length)];
+    if (assistantNames.value.length === 0) {
+      await loadNames();
+    }
+    randomName.value = assistantNames.value[Math.floor(Math.random() * assistantNames.value.length)];
     messages.value.push({
-      text: `Hola, soy ${randomName}, ¿en qué puedo ayudarte?`,
+      text: `Hola, soy ${randomName.value}, ¿en qué puedo ayudarte?`,
       type: "bot"
     });
     nextTick(scrollToBottom);
