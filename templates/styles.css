@@ -1,0 +1,18 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+}
+
+.page {
+  display: none;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+.page.active {
+  display: block;
+}
+
+#app-container {
+  width: 100%;
+}

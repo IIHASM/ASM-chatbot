@@ -19,15 +19,14 @@
         <span class="status-text" :style="{ color: subtitleColor }">Online</span>
       </div>
       <div class="messages" ref="messagesContainer">
-
-
         <div v-for="(msg, i) in messages" :key="i" :class="msg.type">
           <!-- Mensaje del bot -->
           <div v-if="msg.type === 'bot' && (i !== messages.length - 1 || !isTyping)" class="message-row bot">
             <div class="bot-icon">
               <ChatSuggero :style="{ color: chatBotIconColor }" />
             </div>
-            <div class="bot-bubble" v-html="msg.text" :style="{ background: chatBubbleColorBot, color: textBotColor }">
+            <div class="bot-bubble" v-html="msg.text" @click="handleIncidentLinkClick"
+              :style="{ background: chatBubbleColorBot, color: textBotColor }">
             </div>
           </div>
 
@@ -55,6 +54,42 @@
 
       </div>
 
+      <!-- Formulario de Incidencias -->
+      <div v-if="showIncidentForm" class="incident-form-overlay">
+        <div class="incident-form-container">
+          <div class="incident-form-header">
+            <h3>Reportar Incidencia</h3>
+            <button class="close-form-btn" @click="closeIncidentForm">×</button>
+          </div>
+
+          <div class="incident-form-content">
+            <div class="form-group">
+              <label>Email:</label>
+              <input type="email" v-model="incidentForm.email" disabled class="form-input disabled-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Número de Pedido:</label>
+              <input type="text" v-model="incidentForm.orderId" disabled class="form-input disabled-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Motivo de la Incidencia:</label>
+              <textarea v-model="incidentForm.reason" placeholder="Describe el problema con tu pedido..."
+                class="form-textarea" rows="5"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button class="cancel-btn" @click="closeIncidentForm">Cancelar</button>
+              <button class="submit-btn" @click="submitIncident" :disabled="!incidentForm.reason.trim()">
+                Enviar Incidencia
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat messages y input -->
       <div class="input-wrapper" :style="{ '--focus-color': inputFocusColor }">
         <input v-model="input" @keyup.enter="sendMessage" :disabled="isTyping"
           placeholder="Pregunta lo que quieras..." />
@@ -189,8 +224,43 @@ const show = ref(false);
 const input = ref('');
 const messages = ref([]);
 const isTyping = ref(false);
+const showIncidentForm = ref(false);
+
+const incidentForm = ref({
+  email: '',
+  orderId: '',
+  reason: ''
+});
 
 const messagesContainer = ref(null);
+let inactivityTimeout = null;
+let warningTimeout = null;
+
+function resetInactivityTimer() {
+  // Limpiar timers existentes
+  if (inactivityTimeout) clearTimeout(inactivityTimeout);
+  if (warningTimeout) clearTimeout(warningTimeout);
+
+  if (!show.value) return;
+
+  // Timer para mostrar aviso 
+  warningTimeout = setTimeout(() => {
+    if (show.value && !isTyping.value) {
+      messages.value.push({
+        text: '¡Hola! Si no vemos actividad en unos minutos, cerraremos el chat para que todo siga ordenado. Si necesitas algo, escríbenos.',
+        type: 'bot'
+      });
+      scrollToBottom();
+    }
+  }, 300000); // 5 minutos
+
+  // Timer para cerrar chat 
+  inactivityTimeout = setTimeout(() => {
+    if (show.value) {
+      show.value = false;
+    }
+  }, 600000); // 10 minutos
+}
 
 function getOrCreateConversationId() {
   const COOKIE_NAME = 'chat_uid';
@@ -207,7 +277,8 @@ function formatBotText(text) {
 }
 
 const conversationId = getOrCreateConversationId();
-const authorId = window.CHAT_WIDGET_CONFIG?.userId ?? null;
+const user = JSON.parse(localStorage.getItem('user'));
+const authorId = user?.email || null;
 const authorType = authorId ? 'user' : 'anonymous';
 
 const scriptTag = document.currentScript || [...document.getElementsByTagName('script')].pop();
@@ -215,6 +286,8 @@ const backendUrl = scriptTag?.dataset?.backend || props.backend || 'http://local
 
 const sendMessage = async () => {
   if (!input.value.trim() || isTyping.value) return;
+
+  resetInactivityTimer();
 
   const userMessage = input.value;
   messages.value.push({ text: userMessage, type: 'user' });
@@ -310,6 +383,14 @@ const sendMessage = async () => {
 // Guardar mensajes en MongoDB
 async function saveToDB(type, text) {
   try {
+    console.log('[Chat] Enviando mensaje:', {
+      type,
+      content: text,
+      conversationId,
+      authorId,
+      authorType
+    });
+
     await fetch(`${backendUrl}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -339,7 +420,7 @@ const scrollToBottom = () => {
 const assistantNames = ref([]);
 
 async function loadNames() {
-  const response = await fetch('src/assets/namesList/nombres_propios.csv'); 
+  const response = await fetch('src/assets/namesList/nombres_propios.csv');
   const csvText = await response.text();
 
   // Dividir en líneas
@@ -350,17 +431,113 @@ async function loadNames() {
 }
 
 watch(show, async (newVal) => {
-  if (newVal && messages.value.length === 0) {
-    if (assistantNames.value.length === 0) {
-      await loadNames();
+  if (newVal) {
+    // Reiniciar timer de inactividad cada vez que se abre el chat
+    resetInactivityTimer();
+
+    // Solo cargar el mensaje inicial si es la primera vez
+    if (messages.value.length === 0) {
+      if (assistantNames.value.length === 0) {
+        await loadNames();
+      }
+      randomName.value = assistantNames.value[Math.floor(Math.random() * assistantNames.value.length)];
+
+      // Construir mensaje personalizado según si hay sesión iniciada
+      const userName = window.CHAT_WIDGET_CONFIG?.userName;
+      let welcomeMessage = `Hola, soy ${randomName.value}, ¿en qué puedo ayudarte?`;
+
+      if (userName) {
+        welcomeMessage = `Hola ${userName}, soy ${randomName.value}, ¿en qué puedo ayudarte?`;
+      }
+
+      messages.value.push({
+        text: welcomeMessage,
+        type: "bot"
+      });
+      nextTick(scrollToBottom);
     }
-    randomName.value = assistantNames.value[Math.floor(Math.random() * assistantNames.value.length)];
-    messages.value.push({
-      text: `Hola, soy ${randomName.value}, ¿en qué puedo ayudarte?`,
-      type: "bot"
-    });
-    nextTick(scrollToBottom);
+  } else {
+    // Limpiar timers cuando se cierra el chat
+    if (inactivityTimeout) clearTimeout(inactivityTimeout);
+    if (warningTimeout) clearTimeout(warningTimeout);
   }
 });
 
+// Funciones del formulario de incidencias
+function openIncidentForm(email, orderId) {
+  incidentForm.value = {
+    email,
+    orderId,
+    reason: ''
+  };
+  showIncidentForm.value = true;
+}
+
+function closeIncidentForm() {
+  showIncidentForm.value = false;
+  incidentForm.value = {
+    email: '',
+    orderId: '',
+    reason: ''
+  };
+}
+
+async function submitIncident() {
+  if (!incidentForm.value.reason.trim()) return;
+
+  try {
+    // Enviar incidencia al backend (que la reenviará a n8n)
+    const response = await fetch(`${backendUrl}/api/incidents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: incidentForm.value.email,
+        orderId: incidentForm.value.orderId,
+        reason: incidentForm.value.reason,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Error en la respuesta del servidor');
+    }
+
+    // Agregar mensaje al chat confirmando el envío
+    messages.value.push({
+      text: `Incidencia reportada correctamente. Nuestro equipo revisará tu reporte para el pedido ${incidentForm.value.orderId} y se pondrá en contacto contigo pronto.`,
+      type: 'bot'
+    });
+    scrollToBottom();
+    closeIncidentForm();
+  } catch (error) {
+    console.error('[Chat] Error submitting incident:', error);
+    messages.value.push({
+      text: 'Error al enviar la incidencia. Por favor, inténtalo de nuevo.',
+      type: 'bot'
+    });
+  }
+}
+
+function handleIncidentLinkClick(event) {
+  const target = event.target;
+  if (target.tagName === 'A' && target.href.includes('#incident-')) {
+    event.preventDefault();
+    const orderId = target.href.split('#incident-')[1];
+    if (authorId) {
+      openIncidentForm(authorId, orderId);
+    } else {
+      messages.value.push({
+        text: 'Por favor, inicia sesión para reportar una incidencia.',
+        type: 'bot'
+      });
+      scrollToBottom();
+    }
+  }
+}
+
+// Exponer función globalmente para que el backend pueda llamarla
+if (!window.CHAT_WIDGET_CONFIG) {
+  window.CHAT_WIDGET_CONFIG = {};
+}
+window.CHAT_WIDGET_CONFIG.openIncidentForm = openIncidentForm;
 </script>
