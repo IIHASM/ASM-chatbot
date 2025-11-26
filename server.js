@@ -1,38 +1,28 @@
-const Fastify = require('fastify')
-const fastifyStatic = require('@fastify/static')
-const path = require('path')
+const Fastify = require('fastify');
+const fastifyStatic = require('@fastify/static');
+const path = require('path');
 
-const fastify = Fastify({ logger: true })
+const fastify = Fastify({ logger: true });
 
-// 1. Servir los estáticos del widget
+// Servir archivos estáticos desde la carpeta actual
 fastify.register(fastifyStatic, {
-  root: path.join(__dirname, 'dist'),
-  prefix: '/',   // tus JS y CSS estarán en /widget/...
-})
+  root: path.join(__dirname),
+  prefix: '/', // Acceso directo desde la raíz
+});
 
-// 2. Rutas de SPA → solo devuelven index.spa.html
-fastify.get('/app/*', (req, reply) => {
-  reply.sendFile('index.spa.html', path.join(__dirname))
-})
-
-// 2. Rutas de SPA → solo devuelven index.spa.html
-fastify.get('/no-standalone/*', (req, reply) => {
-  reply.sendFile('index.spa.no-standalone.html', path.join(__dirname))
-})
-
-// (opcional) home simple
-fastify.get('/', (req, reply) => {
-  reply.sendFile('index.spa.html', path.join(__dirname))
-})
+// Ruta principal para el index.spa.html
+fastify.get('/', async (request, reply) => {
+  return reply.sendFile('index.spa.html');
+});
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3001, host: '0.0.0.0' })
-    console.log('Servidor iniciado en http://localhost:3001')
+    await fastify.listen({ port: 3001, host: '0.0.0.0' });
+    console.log('Servidor corriendo en http://localhost:3001');
   } catch (err) {
-    fastify.log.error(err)
-    process.exit(1)
+    fastify.log.error(err);
+    process.exit(1);
   }
-}
+};
 
-start()
+start();

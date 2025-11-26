@@ -16,7 +16,7 @@
       <div class="chat-title" :style="{ color: titleColor }">{{ randomName }}</div>
       <div class="chat-status">
         <span class="status-indicator" :style="{ backgroundColor: statusIndicatorColor }"></span>
-        <span class="status-text" :style="{ color: subtitleColor }">Online</span>
+        <span class="status-text" :style="{ color: subtitleColor }">{{ t.online }}</span>
       </div>
       <div class="messages" ref="messagesContainer">
         <div v-for="(msg, i) in messages" :key="i" :class="msg.type">
@@ -58,31 +58,31 @@
       <div v-if="showIncidentForm" class="incident-form-overlay">
         <div class="incident-form-container">
           <div class="incident-form-header">
-            <h3>Reportar Incidencia</h3>
+            <h3>{{ t.reportIncident }}</h3>
             <button class="close-form-btn" @click="closeIncidentForm">×</button>
           </div>
 
           <div class="incident-form-content">
             <div class="form-group">
-              <label>Email:</label>
+              <label>{{ t.email }}:</label>
               <input type="email" v-model="incidentForm.email" disabled class="form-input disabled-input" />
             </div>
 
             <div class="form-group">
-              <label>Número de Pedido:</label>
+              <label>{{ t.orderNumber }}:</label>
               <input type="text" v-model="incidentForm.orderId" disabled class="form-input disabled-input" />
             </div>
 
             <div class="form-group">
-              <label>Motivo de la Incidencia:</label>
-              <textarea v-model="incidentForm.reason" placeholder="Describe el problema con tu pedido..."
+              <label>{{ t.incidentReason }}:</label>
+              <textarea v-model="incidentForm.reason" :placeholder="t.incidentPlaceholder"
                 class="form-textarea" rows="5"></textarea>
             </div>
 
             <div class="form-actions">
-              <button class="cancel-btn" @click="closeIncidentForm">Cancelar</button>
+              <button class="cancel-btn" @click="closeIncidentForm">{{ t.cancel }}</button>
               <button class="submit-btn" @click="submitIncident" :disabled="!incidentForm.reason.trim()">
-                Enviar Incidencia
+                {{ t.submitIncident }}
               </button>
             </div>
           </div>
@@ -92,7 +92,7 @@
       <!-- Chat messages y input -->
       <div class="input-wrapper" :style="{ '--focus-color': inputFocusColor }">
         <input v-model="input" @keyup.enter="sendMessage" :disabled="isTyping"
-          placeholder="Pregunta lo que quieras..." />
+          :placeholder="t.inputPlaceholder" />
         <button class="send-button" @click="sendMessage" :disabled="isTyping">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" :fill="chatSendIconColor" viewBox="0 0 24 24">
             <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue';
+import { ref, nextTick, watch, computed } from 'vue';
 import { defineProps } from 'vue'
 import ChatLogo from './assets/images/chatIcon.svg'
 import ChatSuggero from './assets/images/chatIcon.svg'
@@ -117,6 +117,53 @@ const randomName = ref('');
 import MarkdownIt from 'markdown-it';
 const md = new MarkdownIt();
 
+// Sistema de traducciones
+const translations = {
+  es: {
+    online: 'Online',
+    reportIncident: 'Reportar Incidencia',
+    email: 'Email',
+    orderNumber: 'Número de Pedido',
+    incidentReason: 'Motivo de la Incidencia',
+    incidentPlaceholder: 'Describe el problema con tu pedido...',
+    cancel: 'Cancelar',
+    submitIncident: 'Enviar Incidencia',
+    inputPlaceholder: 'Pregunta lo que quieras...',
+    inactivityWarning: '¡Hola! Si no vemos actividad en unos minutos, cerraremos el chat para que todo siga ordenado. Si necesitas algo, escríbenos.',
+    welcomeDefault: (name) => `Hola, soy ${name}, ¿en qué puedo ayudarte?`,
+    welcomeWithName: (assistantName, userName) => `Hola ${userName}, soy ${assistantName}, ¿en qué puedo ayudarte?`,
+    incidentReported: (orderId) => `Incidencia reportada correctamente. Nuestro equipo revisará tu reporte para el pedido ${orderId} y se pondrá en contacto contigo pronto.`,
+    incidentError: 'Error al enviar la incidencia. Por favor, inténtalo de nuevo.',
+    loginRequired: 'Por favor, inicia sesión para reportar una incidencia.',
+    errorGeneral: 'Parece que ha habido un error. ¿Podrías intentarlo de nuevo?',
+    errorResponse: 'Parece que ha habido un error en tu respuesta. ¿Podrías revisarla o intentarlo de nuevo?',
+    errorConnection: 'Error de conexión. Por favor, inténtalo de nuevo.'
+  },
+  ca: {
+    online: 'En línia',
+    reportIncident: 'Reportar Incidència',
+    email: 'Correu electrònic',
+    orderNumber: 'Número de Comanda',
+    incidentReason: 'Motiu de la Incidència',
+    incidentPlaceholder: 'Descriu el problema amb la teva comanda...',
+    cancel: 'Cancel·lar',
+    submitIncident: 'Enviar Incidència',
+    inputPlaceholder: 'Pregunta el que vulguis...',
+    inactivityWarning: 'Hola! Si no veiem activitat en uns minuts, tancarem el xat per mantenir-ho tot ordenat. Si necessites alguna cosa, escriu-nos.',
+    welcomeDefault: (name) => `Hola, sóc ${name}, en què et puc ajudar?`,
+    welcomeWithName: (assistantName, userName) => `Hola ${userName}, sóc ${assistantName}, en què et puc ajudar?`,
+    incidentReported: (orderId) => `Incidència reportada correctament. El nostre equip revisarà el teu informe per a la comanda ${orderId} i es posarà en contacte amb tu aviat.`,
+    incidentError: 'Error en enviar la incidència. Si us plau, torna-ho a intentar.',
+    loginRequired: 'Si us plau, inicia sessió per reportar una incidència.',
+    errorGeneral: 'Sembla que hi ha hagut un error. Podries tornar-ho a intentar?',
+    errorResponse: 'Sembla que hi ha hagut un error en la teva resposta. Podries revisar-la o tornar-ho a intentar?',
+    errorConnection: 'Error de connexió. Si us plau, torna-ho a intentar.'
+  }
+};
+
+// Computed property para obtener las traducciones según el idioma actual
+const currentLanguage = computed(() => localStorage.getItem('language') || 'es');
+const t = computed(() => translations[currentLanguage.value]);
 
 // Plugin para convertir [correo@dominio.com] en <a href="mailto:correo@dominio.com">correo@dominio.com</a>
 md.use((md) => {
@@ -247,7 +294,7 @@ function resetInactivityTimer() {
   warningTimeout = setTimeout(() => {
     if (show.value && !isTyping.value) {
       messages.value.push({
-        text: '¡Hola! Si no vemos actividad en unos minutos, cerraremos el chat para que todo siga ordenado. Si necesitas algo, escríbenos.',
+        text: t.value.inactivityWarning,
         type: 'bot'
       });
       scrollToBottom();
@@ -356,7 +403,7 @@ const sendMessage = async () => {
                 await saveToDB('bot', accumulatedText);
               } else if (data.type === 'error') {
                 isTyping.value = false;
-                messages.value[botMessageIndex].text = 'Parece que ha habido un error. ¿Podrías intentarlo de nuevo?';
+                messages.value[botMessageIndex].text = t.value.errorGeneral;
               }
             } catch (e) {
               console.error('[Chat] Error parseando SSE:', e, line);
@@ -368,13 +415,13 @@ const sendMessage = async () => {
 
     if (!accumulatedText) {
       isTyping.value = false;
-      messages.value[botMessageIndex].text = 'Parece que ha habido un error en tu respuesta. ¿Podrías revisarla o intentarlo de nuevo?';
+      messages.value[botMessageIndex].text = t.value.errorResponse;
     }
 
   } catch (error) {
     console.error('[Chat] Error en sendMessage:', error);
     isTyping.value = false;
-    messages.value[botMessageIndex].text = 'Error de conexión. Por favor, inténtalo de nuevo.';
+    messages.value[botMessageIndex].text = t.value.errorConnection;
   }
 
   scrollToBottom();
@@ -420,48 +467,39 @@ const scrollToBottom = () => {
 const assistantNames = ref([]);
 
 async function loadNames() {
-  const response = await fetch('src/assets/namesList/nombres_propios.csv');
-  const csvText = await response.text();
+  const response = await fetch(`${backendUrl}/assistant-name`);
+  const data = await response.json();
 
-  // Dividir en líneas
-  const lines = csvText.trim().split('\n');
-
-  // Ignorar la primera línea (cabecera) y extraer la primera columna (Nombre)
-  assistantNames.value = lines.slice(1).map(line => line.split(',')[0]).filter(Boolean);
+  // Extraer solo los nombres
+  assistantNames.value = data.map(item => item.name);
 }
 
 watch(show, async (newVal) => {
   if (newVal) {
-    // Reiniciar timer de inactividad cada vez que se abre el chat
     resetInactivityTimer();
 
-    // Solo cargar el mensaje inicial si es la primera vez
     if (messages.value.length === 0) {
       if (assistantNames.value.length === 0) {
         await loadNames();
       }
+
       randomName.value = assistantNames.value[Math.floor(Math.random() * assistantNames.value.length)];
 
-      // Construir mensaje personalizado según si hay sesión iniciada
       const userName = window.CHAT_WIDGET_CONFIG?.userName;
-      let welcomeMessage = `Hola, soy ${randomName.value}, ¿en qué puedo ayudarte?`;
 
-      if (userName) {
-        welcomeMessage = `Hola ${userName}, soy ${randomName.value}, ¿en qué puedo ayudarte?`;
-      }
+      let welcomeMessage = userName
+        ? t.value.welcomeWithName(randomName.value, userName)
+        : t.value.welcomeDefault(randomName.value);
 
-      messages.value.push({
-        text: welcomeMessage,
-        type: "bot"
-      });
+      messages.value.push({ text: welcomeMessage, type: "bot" });
       nextTick(scrollToBottom);
     }
   } else {
-    // Limpiar timers cuando se cierra el chat
     if (inactivityTimeout) clearTimeout(inactivityTimeout);
     if (warningTimeout) clearTimeout(warningTimeout);
   }
 });
+
 
 // Funciones del formulario de incidencias
 function openIncidentForm(email, orderId) {
@@ -504,7 +542,7 @@ async function submitIncident() {
 
     // Agregar mensaje al chat confirmando el envío
     messages.value.push({
-      text: `Incidencia reportada correctamente. Nuestro equipo revisará tu reporte para el pedido ${incidentForm.value.orderId} y se pondrá en contacto contigo pronto.`,
+      text: t.value.incidentReported(incidentForm.value.orderId),
       type: 'bot'
     });
     scrollToBottom();
@@ -512,7 +550,7 @@ async function submitIncident() {
   } catch (error) {
     console.error('[Chat] Error submitting incident:', error);
     messages.value.push({
-      text: 'Error al enviar la incidencia. Por favor, inténtalo de nuevo.',
+      text: t.value.incidentError,
       type: 'bot'
     });
   }
@@ -527,7 +565,7 @@ function handleIncidentLinkClick(event) {
       openIncidentForm(authorId, orderId);
     } else {
       messages.value.push({
-        text: 'Por favor, inicia sesión para reportar una incidencia.',
+        text: t.value.loginRequired,
         type: 'bot'
       });
       scrollToBottom();
