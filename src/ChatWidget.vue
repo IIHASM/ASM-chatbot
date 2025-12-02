@@ -200,6 +200,16 @@ const props = defineProps({
     required: false,
     default: null
   },
+  project: {
+    type: String,
+    required: false,
+    default: null
+  },
+  prueba: {
+    type: String,
+    required: false,
+    default: null
+  },
   user: {
     type: String,
     required: false,
@@ -329,7 +339,11 @@ const authorId = user?.email || null;
 const authorType = authorId ? 'user' : 'anonymous';
 
 const scriptTag = document.currentScript || [...document.getElementsByTagName('script')].pop();
-const backendUrl = scriptTag?.dataset?.backend || props.backend || 'http://localhost:3000';
+const backendUrl = props.backend || 'http://localhost:3000';
+const project = props.project || '';
+
+// console.log('[Chat] conectado con proyecto:', { project });
+// console.log('PROPS', props);
 
 const sendMessage = async () => {
   if (!input.value.trim() || isTyping.value) return;
@@ -352,7 +366,7 @@ const sendMessage = async () => {
     // Guardar mensaje del usuario en MongoDB
     await saveToDB('user', userMessage);
 
-    const response = await fetch(`${backendUrl}/api/message`, {
+    const response = await fetch(`${backendUrl}/${project}/api/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -525,7 +539,7 @@ async function submitIncident() {
 
   try {
     // Enviar incidencia al backend (que la reenviará a n8n)
-    const response = await fetch(`${backendUrl}/api/incidents`, {
+    const response = await fetch(`${backendUrl}/${project}/api/incidents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

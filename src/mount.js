@@ -55,6 +55,7 @@ function extractBackendUrl(styleApiUrl) {
  * @param {Object} config - Configuración del widget
  * @param {string} config.styleApiUrl - URL para obtener los estilos (requerido si no hay backend)
  * @param {string} config.backend - URL del backend para mensajes (opcional, se extrae de styleApiUrl)
+ * @param {string} config.project - ID del proyecto (opcional)
  * @param {string} config.user - ID del usuario (opcional)
  * @param {string} config.chatLogoUrl - URL del logo personalizado (opcional)
  * @param {Object} config.styles - Estilos directos como fallback (opcional)
@@ -107,6 +108,7 @@ export async function init(config = {}) {
   // Crear la aplicación Vue con la configuración combinada
   const app = createApp(ChatWidget, {
     backend: backendUrl,
+    project: config.project,
     user: config.user,
     chatLogoUrl: config.chatLogoUrl || styleConfig.chatLogoUrl,
     ...styleConfig
@@ -114,6 +116,7 @@ export async function init(config = {}) {
   
   console.log('[Chat Widget] Initialized with config:', {
     backend: backendUrl,
+    project: config.project,
     styleApiUrl: config.styleApiUrl,
     user: config.user,
     hasCustomStyles: !!config.styles
