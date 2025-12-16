@@ -26,7 +26,11 @@
               <ChatSuggero :style="{ color: chatBotIconColor }" />
             </div>
             <div class="bot-bubble" v-html="msg.text" @click="handleIncidentLinkClick"
-              :style="{ background: chatBubbleColorBot, color: textBotColor }">
+              :style="{ 
+                background: chatBubbleColorBot, 
+                color: textBotColor,
+                '--link-color': linkBotColor 
+              }">
             </div>
           </div>
 
@@ -275,6 +279,10 @@ const props = defineProps({
     type: String,
     default: '#C9C9C926'
   },
+  linkBotColor: {
+    type: String,
+    default: '#0000EE'
+  },
 })
 
 const show = ref(false);
@@ -366,6 +374,9 @@ const sendMessage = async () => {
     // Guardar mensaje del usuario en MongoDB
     await saveToDB('user', userMessage);
 
+    // Obtener idioma actual en el momento del envío
+    const webLanguage = localStorage.getItem('language') || 'es';
+
     const response = await fetch(`${backendUrl}/${project}/api/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -373,7 +384,8 @@ const sendMessage = async () => {
         content: userMessage,
         authorId,
         authorType,
-        conversationId
+        conversationId,
+        language: webLanguage // Usar idioma del localStorage
       })
     });
 
@@ -479,13 +491,20 @@ const scrollToBottom = () => {
 
 
 const assistantNames = ref([]);
+const allAssistantNames = ref([]);
 
 async function loadNames() {
   const response = await fetch(`${backendUrl}/assistant-name`);
   const data = await response.json();
 
-  // Extraer solo los nombres
-  assistantNames.value = data.map(item => item.name);
+  // Guardar todos los nombres con su información completa
+  allAssistantNames.value = data;
+  
+  // Filtrar nombres según el idioma actual
+  const language = currentLanguage.value === 'ca' ? 'catalán' : 'español';
+  assistantNames.value = data
+    .filter(item => item.origin === language)
+    .map(item => item.name);
 }
 
 watch(show, async (newVal) => {
@@ -493,8 +512,14 @@ watch(show, async (newVal) => {
     resetInactivityTimer();
 
     if (messages.value.length === 0) {
-      if (assistantNames.value.length === 0) {
+      if (allAssistantNames.value.length === 0) {
         await loadNames();
+      } else {
+        // Recargar nombres filtrados por idioma
+        const language = currentLanguage.value === 'ca' ? 'catalán' : 'español';
+        assistantNames.value = allAssistantNames.value
+          .filter(item => item.origin === language)
+          .map(item => item.name);
       }
 
       randomName.value = assistantNames.value[Math.floor(Math.random() * assistantNames.value.length)];

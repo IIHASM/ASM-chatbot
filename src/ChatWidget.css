@@ -9,7 +9,6 @@
 }
 
 .chat-icon {
-  height: 70px;
   width: 70px;
 }
 
@@ -93,6 +92,14 @@
   word-break: break-word;
 }
 
+.bot-bubble a {
+  color: var(--link-color, #0000EE);
+  text-decoration: underline;
+}
+
+.bot-bubble a:hover {
+  opacity: 0.8;
+}
 
 .user-bubble {
   min-height: 30px;

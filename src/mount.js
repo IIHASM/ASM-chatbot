@@ -79,6 +79,7 @@ export async function init(config = {}) {
     titleColor: '#000000',
     subtitleColor: '#000000',
     chatBackgroundColor: '#C9C9C926',
+    linkBotColor: '#0000EE',
   }
   
   // Combinar: defaults < config.styles < apiStyles

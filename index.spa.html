@@ -87,7 +87,9 @@
     // Función para cambiar idioma
     window.changeLanguage = function(lang) {
       localStorage.setItem('language', lang);
-      location.reload(); 
+      currentLanguage = lang;
+      updateTexts();
+      // No recargues la página, solo actualiza los textos
     };
 
     // Al cargar la página, marcar el botón activo
@@ -241,9 +243,9 @@
 
         ChatWidget.init({
           target: '#chat-widget',
-          styleApiUrl: 'http://localhost:3000/chatbot-feature/1',
-          backend: 'http://localhost:3000',
-          project: 'dyv'
+          styleApiUrl: 'https://assistant.suggero.io/chatbot-feature/7',
+          project: 'dyv',
+          backend: 'http://localhost:3000'
         });
       }
 

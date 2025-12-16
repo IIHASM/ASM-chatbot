@@ -12,7 +12,7 @@ fastify.register(fastifyStatic, {
 
 // Ruta principal para el index.spa.html
 fastify.get('/', async (request, reply) => {
-  return reply.sendFile('index.spa.no-trads.html');
+  return reply.sendFile('index.spa.html');
 });
 
 const start = async () => {
