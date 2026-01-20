@@ -209,6 +209,11 @@ const props = defineProps({
     required: false,
     default: null
   },
+  assistantNames: {
+    type: Array,
+    required: false,
+    default: () => []
+  },
   prueba: {
     type: String,
     required: false,
@@ -377,7 +382,7 @@ const sendMessage = async () => {
     // Obtener idioma actual en el momento del envío
     const webLanguage = localStorage.getItem('language') || 'es';
 
-    const response = await fetch(`${backendUrl}/${project}/api/message`, {
+    const response = await fetch(`${backendUrl}/chat/${project}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -494,17 +499,34 @@ const assistantNames = ref([]);
 const allAssistantNames = ref([]);
 
 async function loadNames() {
-  const response = await fetch(`${backendUrl}/assistant-name`);
-  const data = await response.json();
-
-  // Guardar todos los nombres con su información completa
-  allAssistantNames.value = data;
+  // Si los nombres ya vienen en props, usarlos directamente
+  if (props.assistantNames && props.assistantNames.length > 0) {
+    allAssistantNames.value = props.assistantNames;
+    const language = currentLanguage.value === 'ca' ? 'CA' : 'ES';
+    assistantNames.value = allAssistantNames.value
+      .filter(item => item.origin === language)
+      .map(item => item.name);
+    console.log('[Chat] Names from props:', assistantNames.value);
+    return;
+  }
   
-  // Filtrar nombres según el idioma actual
-  const language = currentLanguage.value === 'ca' ? 'catalán' : 'español';
-  assistantNames.value = data
-    .filter(item => item.origin === language)
-    .map(item => item.name);
+  // Si no vienen en props, intentar obtenerlos del backend
+  try {
+    const response = await fetch(`${backendUrl}/assistant-name`);
+    const data = await response.json();
+
+    // Guardar todos los nombres con su información completa
+    allAssistantNames.value = data;
+    
+    // Filtrar nombres según el idioma actual (ES/CA)
+    const language = currentLanguage.value === 'ca' ? 'CA' : 'ES';
+    assistantNames.value = data
+      .filter(item => item.origin === language)
+      .map(item => item.name);
+    console.log('[Chat] Names from backend:', assistantNames.value);
+  } catch (error) {
+    console.error('[Chat] Error loading names:', error);
+  }
 }
 
 watch(show, async (newVal) => {
@@ -515,8 +537,8 @@ watch(show, async (newVal) => {
       if (allAssistantNames.value.length === 0) {
         await loadNames();
       } else {
-        // Recargar nombres filtrados por idioma
-        const language = currentLanguage.value === 'ca' ? 'catalán' : 'español';
+        // Recargar nombres filtrados por idioma (ES/CA)
+        const language = currentLanguage.value === 'ca' ? 'CA' : 'ES';
         assistantNames.value = allAssistantNames.value
           .filter(item => item.origin === language)
           .map(item => item.name);

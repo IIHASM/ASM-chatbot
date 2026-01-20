@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Suggero Test</title>
+  <title>Suggero New</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="templates/styles.css" />
   <link rel="stylesheet" href="templates/login.css" />
@@ -88,8 +88,7 @@
     window.changeLanguage = function(lang) {
       localStorage.setItem('language', lang);
       currentLanguage = lang;
-      updateTexts();
-      // No recargues la página, solo actualiza los textos
+      location.reload();
     };
 
     // Al cargar la página, marcar el botón activo
@@ -241,11 +240,11 @@
 
         window.CHAT_WIDGET_CONFIG = { userName };
 
+        // project ahora recibe el UUID del cliente
         ChatWidget.init({
           target: '#chat-widget',
-          styleApiUrl: 'https://assistant.suggero.io/chatbot-feature/7',
-          project: 'dyv',
-          backend: 'http://localhost:3000'
+          project: '1882295f-80ca-479b-9801-b8c2df836926', 
+          backend: 'http://localhost:3010'
         });
       }
 

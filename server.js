@@ -17,8 +17,8 @@ fastify.get('/', async (request, reply) => {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3001, host: '0.0.0.0' });
-    console.log('Servidor corriendo en http://localhost:3001');
+    await fastify.listen({ port: 3002, host: '0.0.0.0' });
+    console.log('Servidor corriendo en http://localhost:3002');
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

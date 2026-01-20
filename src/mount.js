@@ -2,6 +2,38 @@ import { createApp } from 'vue'
 import ChatWidget from './ChatWidget.vue'
 
 /**
+ * Obtiene la configuración del cliente desde el backend
+ * @param {string} backendUrl - URL del backend
+ * @param {string} clientId - UUID del cliente
+ * @returns {Promise<Object>} - Configuración del cliente (estilos y nombres)
+ */
+async function fetchClientConfig(backendUrl, clientId) {
+  try {
+    console.log('[Chat Widget] Fetching client config from:', `${backendUrl}/chat/${clientId}/config`)
+    
+    const response = await fetch(`${backendUrl}/chat/${clientId}/config`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      console.error('[Chat Widget] Error response:', response.status, response.statusText)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('[Chat Widget] Client config loaded:', JSON.stringify(data, null, 2))
+    
+    return data
+  } catch (error) {
+    console.error('[Chat Widget] Error fetching client config:', error)
+    return { styles: {}, assistantNames: [] }
+  }
+}
+
+/**
  * Obtiene la configuración de estilos desde la API
  * @param {string} apiUrl - URL del endpoint que devuelve la configuración
  * @returns {Promise<Object>} - Objeto con la configuración de estilos
@@ -53,9 +85,9 @@ function extractBackendUrl(styleApiUrl) {
 /**
  * Inicializa el widget de chat con integración NestJS
  * @param {Object} config - Configuración del widget
- * @param {string} config.styleApiUrl - URL para obtener los estilos (requerido si no hay backend)
- * @param {string} config.backend - URL del backend para mensajes (opcional, se extrae de styleApiUrl)
- * @param {string} config.project - ID del proyecto (opcional)
+ * @param {string} config.project - UUID del cliente (REQUERIDO)
+ * @param {string} config.backend - URL del backend (opcional, usa http://localhost:3000 por defecto)
+ * @param {string} config.styleApiUrl - URL alternativa para obtener los estilos (obsoleto, usa el backend)
  * @param {string} config.user - ID del usuario (opcional)
  * @param {string} config.chatLogoUrl - URL del logo personalizado (opcional)
  * @param {Object} config.styles - Estilos directos como fallback (opcional)
@@ -82,28 +114,29 @@ export async function init(config = {}) {
     linkBotColor: '#0000EE',
   }
   
-  // Combinar: defaults < config.styles < apiStyles
+  // Combinar: defaults < config.styles < configClientStyles < styleApiUrl
   let styleConfig = { ...defaultStyles, ...config.styles }
+  let assistantNames = []
   
-  // Si se proporciona styleApiUrl, obtener estilos desde la API
+  // Determinar la URL del backend
+  let backendUrl = config.backend || 'http://localhost:3000'
+  
+  // Si se proporciona project (clientId), obtener la configuración del cliente
+  if (config.project) {
+    const clientConfig = await fetchClientConfig(backendUrl, config.project)
+    if (clientConfig.styles && Object.keys(clientConfig.styles).length > 0) {
+      styleConfig = { ...styleConfig, ...clientConfig.styles }
+    }
+    if (clientConfig.assistantNames && clientConfig.assistantNames.length > 0) {
+      assistantNames = clientConfig.assistantNames
+    }
+  }
+  
+  // Si se proporciona styleApiUrl (fallback para retrocompatibilidad), obtener estilos desde la API
   if (config.styleApiUrl) {
     const apiStyles = await fetchStyleConfig(config.styleApiUrl)
     // Los estilos de la API tienen máxima prioridad
     styleConfig = { ...styleConfig, ...apiStyles }
-  }
-  
-  // Determinar la URL del backend
-  // Prioridad: config.backend > extraer de styleApiUrl > valor por defecto
-  let backendUrl = config.backend
-  
-  if (!backendUrl && config.styleApiUrl) {
-    backendUrl = extractBackendUrl(config.styleApiUrl)
-    console.log('[Chat Widget] Backend URL extracted from styleApiUrl:', backendUrl)
-  }
-  
-  if (!backendUrl) {
-    backendUrl = 'http://localhost:3000'
-    console.warn('[Chat Widget] No backend URL provided, using default:', backendUrl)
   }
   
   // Crear la aplicación Vue con la configuración combinada
@@ -112,6 +145,7 @@ export async function init(config = {}) {
     project: config.project,
     user: config.user,
     chatLogoUrl: config.chatLogoUrl || styleConfig.chatLogoUrl,
+    assistantNames: assistantNames,
     ...styleConfig
   })
   
@@ -120,7 +154,8 @@ export async function init(config = {}) {
     project: config.project,
     styleApiUrl: config.styleApiUrl,
     user: config.user,
-    hasCustomStyles: !!config.styles
+    hasCustomStyles: !!config.styles,
+    assistantNamesCount: assistantNames.length
   })
   
   app.mount(container)
