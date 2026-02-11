@@ -1,189 +1,146 @@
 # Chat Widget (Conversation Mode)
 
-Vue 3 widget for chat interfaces with persistent conversation ID.
+Vue 3 widget for chat interfaces with persistent conversation ID, multilingual support, and email integration via SMTP2GO.
 
 ## ✨ Features
 
-- Stores user identity via cookie (`chat_uid`)
-- Sends `conversationId`, `authorId` and `authorType`
-- Works with a backend that supports threaded conversations
-- Two build modes:
-  - **Standalone** → incluye Vue embebido (se puede usar en cualquier página sin Vue)
-  - **Lite / No-Standalone** → más ligero, requiere que la página cargue Vue globalmente
-- Permite configurar props tanto por:
-  - Atributos `data-*` en la etiqueta `<script>` que carga el widget
-  - Props pasados directamente en la llamada a `ChatWidget.init({...})`
-  - Objeto global opcional `window.CHAT_WIDGET_CONFIG`
+- **Persistent Identity**: Stores user identity via cookie (`chat_uid`).
+- **Multilingual**: Supports Spanish (es), Catalan (ca), and English (en).
+- **Email Integration**: Sends contact forms using SMTP2GO via a Node.js backend.
+- **Embeddable**: Can be used on any website via a simple script tag.
+- **Responsive**: Mobile-friendly design with smooth animations.
 
 ---
 
-## 🚀 Instalación & Desarrollo
+## 🚀 Setup & Installation
 
-Clona el repositorio e instala dependencias:
+1.  **Clone the repository**:
+    ```bash
+    git clone <repo-url>
+    cd chatbot-asm
+    ```
 
-```bash
-npm install
-```
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
 
-Modo desarrollo con recarga en caliente:
-
-```bash
-npm run dev
-```
-
-Abrir en navegador:  
-```
-http://localhost:5173
-```
+3.  **Configure Environment Variables**:
+    - Rename `.env.example` to `.env`.
+    - Fill in your SMTP2GO credentials:
+      ```env
+      SMTP_HOST=mail.smtp2go.com
+      SMTP_PORT=2525
+      SMTP_USER=your_smtp2go_username
+      SMTP_PASS=your_smtp2go_password
+      ```
 
 ---
 
-## 🏗️ Builds de Producción
+## 🛠️ Development
 
-### 1. Build Standalone (con Vue embebido)
+To run the project locally, you need to start **both** the backend and the frontend.
 
-Este build incluye Vue dentro del bundle, por lo que se puede usar en cualquier web sin dependencias externas.
+1.  **Start the Backend** (handles emails):
+    ```bash
+    # Terminal 1
+    node server.js
+    ```
+    Runs on `http://localhost:3002`.
+
+2.  **Start the Frontend** (UI development):
+    ```bash
+    # Terminal 2
+    npm run dev
+    ```
+    Runs on `http://localhost:5173` (proxies API requests to port 3002).
+
+---
+
+## 🏗️ Production Build
+
+To generate the files for embedding on a website:
 
 ```bash
 npm run build
 ```
 
-Genera:
-
-```
-dist/chat-widget.standalone.iife.js
-dist/style.css
-```
-
-**Uso en HTML (con `data-*` + `init()`):**
-
-```html
-<link rel="stylesheet" href="/widget/style.css">
-
-<script src="/widget/chat-widget.standalone.iife.js"
-        data-chat-widget="1"
-        data-icon-width="60"
-        data-backend="https://your.api/message">
-</script>
-
-<script>
-  // Props en data-* se mezclarán automáticamente con los pasados aquí
-  ChatWidget.init({
-    target: '#chat-widget',
-    user: 'DemoUser'
-  })
-</script>
-```
-
-En este ejemplo:
-- `data-icon-width="60"` y `data-backend="https://your.api/message"` vienen del `dataset`.
-- `user: 'DemoUser'` viene de los props pasados manualmente.
-- Ambos se combinan, dando flexibilidad al integrador.
+This will create a `dist/` folder containing:
+- `chat-widget.standalone.iife.js`: The main script bundle (includes Vue).
+- `style.css`: The widget styles.
 
 ---
 
-### 2. Build No-Standalone (lite, externaliza Vue)
+## 🌐 Deployment & Embedding
 
-Este build es más liviano pero **requiere que la página incluya Vue globalmente** antes de cargar el widget.
+### 1. Build the Project
+First, generate the production-ready files:
 
 ```bash
-npm run build:no-standalone
+npm run build
 ```
 
-Genera:
+This creates a `dist/` folder with:
+- `chat-widget.standalone.iife.js`: The self-contained widget script.
+- `style.css`: The widget styles.
 
-```
-dist/chat-widget.iife.js
-dist/style.css
-```
+### 2. Host the Backend & Files
+You need a server (VPS, Heroku, etc.) to:
+1.  **Run the Backend**:
+    - Upload `server.js` and `package.json`.
+    - Run `npm install --production`.
+    - Start the server: `node server.js` (or use PM2: `pm2 start server.js`).
+    - ensure it's accessible via a public URL (e.g., `https://api.yourdomain.com`).
 
-**Uso en HTML:**
+2.  **Host the Static Files**:
+    - Upload the `dist/` folder to your web server or CDN.
+    - Ensure `chat-widget.standalone.iife.js` and `style.css` are accessible via URL.
+
+### 3. Embed on Your Website (HTML)
+Add this code to your website's HTML (inside `<body>` or `<head>`):
 
 ```html
-<link rel="stylesheet" href="/widget/style.css">
+<!-- 1. Load the CSS -->
+<link rel="stylesheet" href="https://yourdomain.com/dist/style.css">
 
-<!-- Vue debe estar cargado globalmente -->
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<!-- 2. Load the Widget Script -->
+<script src="https://yourdomain.com/dist/chat-widget.standalone.iife.js"></script>
 
-<!-- Widget bundle -->
-<script src="/widget/chat-widget.iife.js" 
-        data-chat-widget="1"
-        data-icon-width="60"
-        data-backend="https://your.api/message">
-</script>
-
-
+<!-- 3. Initialize the Widget -->
 <script>
-  // En lite también puedes pasar props por dataset + init
-  ChatWidget.init({
-    target: '#chat-widget',
-    user: getUserFromCookie()
-  })
+  window.onload = function() {
+    if (window.ChatWidget) {
+      window.ChatWidget.init({
+        // REQUIRED: The URL where your server.js is running
+        backend: 'https://api.yourdomain.com',
+
+        // OPTIONAL: Override default options if needed
+        automatedOptions: {
+           es: [ { label: 'Ayuda', answer: '...' } ]
+        }
+      });
+    }
+  };
 </script>
 ```
+
+npm start
+
+### Configuration Options (`init`)
+
+| Option | Type | Description |
+| :--- | :--- | :--- |
+| `backend` | String | **Required**. URL of your backend server (e.g., `https://api.yourdomain.com`). |
+| `project` | String | (Optional) Client UUID for loading specific config. |
+| `chatLogoUrl`| String | (Optional) URL for a custom chat logo. |
+| `automatedOptions` | Object | (Optional) Override default questions/answers. Keyed by language (`es`, `ca`, `en`). |
 
 ---
 
-## 🔧 Configuración dinámica
+## 📂 Project Structure
 
-Cuando los datos dependen de cookies, login u otra lógica de la aplicación host, como el `userId`, se recomienda **usar siempre `ChatWidget.init()`** en lugar de atributos `data-*`, ya que permite montar el widget dinámicamente una vez que los datos estén disponibles.
-
-Ejemplo:
-
-```html
-<script src="/widget/chat-widget.standalone.iife.js" data-chat-widget="1" data-icon-width="60"></script>
-<script>
-  const userId = getUserFromCookie()
-
-  ChatWidget.init({
-    target: '#chat-widget',
-    backend: 'https://your.api/message',
-    user: userId
-  })
-</script>
-```
-
----
-
-## 📦 Snippet universal para integradores
-
-Este snippet detecta si Vue ya está cargado globalmente y decide qué versión del widget usar.  
-Sirve para documentar a terceros cómo incluir tu widget sin preocuparse de los detalles.
-
-```html
-<link rel="stylesheet" href="https://cdn.midominio.com/widget/style.css">
-
-<div id="chat-widget"></div>
-
-<script>
-(function() {
-  const hasVue = !!window.Vue
-  const script = document.createElement('script')
-  script.src = hasVue
-    ? "https://cdn.midominio.com/widget/chat-widget.iife.js"       // Lite
-    : "https://cdn.midominio.com/widget/chat-widget.standalone.iife.js" // Standalone
-  script.setAttribute('data-chat-widget', '1')
-  script.setAttribute('data-backend', 'https://your.api/message')
-  script.onload = function() {
-    ChatWidget.init({
-      target: '#chat-widget',
-      iconWdith: 60,
-      user: window.MY_APP_USER_ID || null
-    })
-  }
-  document.head.appendChild(script)
-})();
-</script>
-```
-
----
-
-## 📖 Notas
-
-- **Standalone** = más pesado pero autónomo. Úsalo cuando el host **no use Vue**.  
-- **Lite / No-Standalone** = más liviano, ideal para proyectos que **ya usan Vue global**.  
-- Siempre expone `ChatWidget.init()` como API para mayor control.  
-- Los props se pueden pasar de **tres maneras**:
-  1. Atributos `data-*` en el `<script data-chat-widget="1">`
-  2. Objeto global opcional `window.CHAT_WIDGET_CONFIG`
-  3. Props directos en `ChatWidget.init({...})` (los de mayor prioridad)
+- `src/ChatWidget.vue`: Main chat component.
+- `src/ChatForm.vue`: Contact form component.
+- `server.js`: Node.js/Fastify backend for handling emails.
+- `src/mount.js`: Entry point for the standalone build.
+- `vite.config.js`: Vite configuration (proxy, build settings).

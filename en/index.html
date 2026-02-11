@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASM Dev</title>
+  <title>ASM Hub</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -62,9 +62,9 @@
     }
   </style>
 
-  <!-- Vite entry point (Development/Live) -->
+  <!-- Vite entry point -->
   <script type="module">
-    import { init } from './src/mount.js';
+    import { init } from '/src/mount.js';
 
     // 1. Capture language from URL path
     const path = window.location.pathname;
@@ -76,9 +76,7 @@
     localStorage.setItem('language', lang);
 
     // 3. Initialize the widget
-    init({
-
-    });
+    init({});
   </script>
 </body>
 

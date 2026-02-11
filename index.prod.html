@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASM Dev</title>
+  <title>ASM Hub</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -62,10 +62,9 @@
     }
   </style>
 
-  <!-- Vite entry point (Development/Live) -->
-  <script type="module">
-    import { init } from './src/mount.js';
-
+  <!-- Vite entry point (Production/Static) -->
+  <script src="/dist/chat-widget.standalone.iife.js"></script>
+  <script>
     // 1. Capture language from URL path
     const path = window.location.pathname;
     let lang = 'es';
@@ -76,7 +75,8 @@
     localStorage.setItem('language', lang);
 
     // 3. Initialize the widget
-    init({
+    // Note: The standalone build exposes 'ChatWidget' global
+    window.ChatWidget.init({
 
     });
   </script>
